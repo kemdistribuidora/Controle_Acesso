@@ -105,7 +105,7 @@ async function detectDescriptor(videoEl) {
 }
 
 async function fetchCadastros() {
-  const res = await fetch(APPS_SCRIPT_URL);
+  const res = await fetch(APPS_SCRIPT_URL + '?t=' + Date.now(), { cache: 'no-store' });
   const data = await res.json();
   cadastros = data.cadastros || [];
   if (cadastros.length > 0) {
@@ -138,6 +138,7 @@ tabPonto.onclick = () => {
   tabCadastro.classList.remove('active');
   secPonto.classList.add('active');
   secCadastro.classList.remove('active');
+  fetchCadastros();
 };
 tabCadastro.onclick = () => {
   tabCadastro.classList.add('active');
