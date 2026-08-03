@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Controle de Acesso - Câmara Fria</title>
+<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+<script src="config.js"></script>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 16px;
+    background: #111;
+    color: #eee;
+  }
+  h1 { font-size: 20px; text-align: center; }
+  .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+  .tabs button {
+    flex: 1; padding: 12px; border: none; border-radius: 8px;
+    background: #333; color: #eee; font-size: 15px;
+  }
+  .tabs button.active { background: #2a7; color: #000; font-weight: bold; }
+  video, canvas { width: 100%; border-radius: 8px; background: #000; }
+  #overlay { position: absolute; top: 0; left: 0; }
+  .video-wrap { position: relative; }
+  input[type=text] {
+    width: 100%; padding: 12px; font-size: 16px; margin: 8px 0;
+    border-radius: 8px; border: 1px solid #444; background: #222; color: #eee;
+  }
+  button.action {
+    width: 100%; padding: 14px; font-size: 16px; margin-top: 8px;
+    border: none; border-radius: 8px; background: #2a7; color: #000; font-weight: bold;
+  }
+  button.action:disabled { background: #555; color: #999; }
+  #status { margin-top: 12px; padding: 12px; border-radius: 8px; text-align: center; font-size: 15px; min-height: 20px; }
+  .ok { background: #163; }
+  .erro { background: #611; }
+  .info { background: #225; }
+  section { display: none; }
+  section.active { display: block; }
+</style>
+</head>
+<body>
+
+<h1>Controle de Acesso - Câmara Fria</h1>
+
+<div class="tabs">
+  <button id="tabPonto" class="active">Bater Ponto</button>
+  <button id="tabCadastro">Cadastrar</button>
+</div>
+
+<section id="secPonto" class="active">
+  <div class="video-wrap">
+    <video id="videoPonto" autoplay muted playsinline></video>
+  </div>
+  <button class="action" id="btnPonto">Reconhecer e Registrar</button>
+  <div id="statusPonto"></div>
+</section>
+
+<section id="secCadastro">
+  <input type="text" id="inputNome" placeholder="Nome completo">
+  <div class="video-wrap">
+    <video id="videoCadastro" autoplay muted playsinline></video>
+  </div>
+  <button class="action" id="btnCadastro">Capturar Rosto e Cadastrar</button>
+  <div id="statusCadastro"></div>
+</section>
+
+<script>
+const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
+const MATCH_THRESHOLD = 0.55;
+
+let cadastros = [];
+let faceMatcher = null;
+
+function setStatus(el, msg, tipo) {
+  el.textContent = msg;
+  el.className = tipo || '';
+}
+
+async function startCamera(videoEl) {
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: 'user', width: { ideal: 480 } },
+    audio: false
+  });
+  videoEl.srcObject = stream;
+  return new Promise(resolve => videoEl.onloadedmetadata = () => resolve());
+}
+
+async function loadModels() {
+  await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+  await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+  await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+}
+
+async function detectDescriptor(videoEl) {
+  const result = await faceapi
+    .detectSingleFace(videoEl, new faceapi.TinyFaceDetectorOptions())
+    .withFaceLandmarks()
+    .withFaceDescriptor();
+  return result ? result.descriptor : null;
+}
+
+async function fetchCadastros() {
+  const res = await fetch(APPS_SCRIPT_URL);
+  const data = await res.json();
+  cadastros = data.cadastros || [];
+  if (cadastros.length > 0) {
+    const labeled = cadastros.map(c => new faceapi.LabeledFaceDescriptors(
+      c.nome, [new Float32Array(c.descriptor)]
+    ));
+    faceMatcher = new faceapi.FaceMatcher(labeled, MATCH_THRESHOLD);
+  } else {
+    faceMatcher = null;
+  }
+}
+
+async function postAppsScript(body) {
+  const res = await fetch(APPS_SCRIPT_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify(body)
+  });
+  return res.json();
+}
+
+// --- Tabs ---
+const tabPonto = document.getElementById('tabPonto');
+const tabCadastro = document.getElementById('tabCadastro');
+const secPonto = document.getElementById('secPonto');
+const secCadastro = document.getElementById('secCadastro');
+
+tabPonto.onclick = () => {
+  tabPonto.classList.add('active');
+  tabCadastro.classList.remove('active');
+  secPonto.classList.add('active');
+  secCadastro.classList.remove('active');
+};
+tabCadastro.onclick = () => {
+  tabCadastro.classList.add('active');
+  tabPonto.classList.remove('active');
+  secCadastro.classList.add('active');
+  secPonto.classList.remove('active');
+};
+
+// --- Ponto ---
+const videoPonto = document.getElementById('videoPonto');
+const btnPonto = document.getElementById('btnPonto');
+const statusPonto = document.getElementById('statusPonto');
+
+btnPonto.onclick = async () => {
+  btnPonto.disabled = true;
+  setStatus(statusPonto, 'Analisando rosto...', 'info');
+  try {
+    const descriptor = await detectDescriptor(videoPonto);
+    if (!descriptor) {
+      setStatus(statusPonto, 'Rosto não encontrado. Aproxime o celular.', 'erro');
+      return;
+    }
+    if (!faceMatcher) {
+      setStatus(statusPonto, 'Nenhum rosto cadastrado ainda.', 'erro');
+      return;
+    }
+    const match = faceMatcher.findBestMatch(descriptor);
+    if (match.label === 'unknown') {
+      setStatus(statusPonto, 'Rosto não reconhecido. Cadastre-se primeiro.', 'erro');
+      return;
+    }
+    setStatus(statusPonto, 'Registrando ' + match.label + '...', 'info');
+    const resp = await postAppsScript({ action: 'registrar', nome: match.label });
+    const hora = new Date(resp.dataHora).toLocaleTimeString('pt-BR');
+    setStatus(statusPonto, resp.tipo + ' registrada: ' + match.label + ' às ' + hora, 'ok');
+  } catch (err) {
+    setStatus(statusPonto, 'Erro: ' + err.message, 'erro');
+  } finally {
+    btnPonto.disabled = false;
+  }
+};
+
+// --- Cadastro ---
+const videoCadastro = document.getElementById('videoCadastro');
+const btnCadastro = document.getElementById('btnCadastro');
+const statusCadastro = document.getElementById('statusCadastro');
+const inputNome = document.getElementById('inputNome');
+
+btnCadastro.onclick = async () => {
+  const nome = inputNome.value.trim();
+  if (!nome) {
+    setStatus(statusCadastro, 'Digite o nome primeiro.', 'erro');
+    return;
+  }
+  btnCadastro.disabled = true;
+  setStatus(statusCadastro, 'Capturando rosto...', 'info');
+  try {
+    const descriptor = await detectDescriptor(videoCadastro);
+    if (!descriptor) {
+      setStatus(statusCadastro, 'Rosto não encontrado. Aproxime o celular.', 'erro');
+      return;
+    }
+    await postAppsScript({ action: 'cadastrar', nome: nome, descriptor: Array.from(descriptor) });
+    setStatus(statusCadastro, 'Cadastrado: ' + nome, 'ok');
+    inputNome.value = '';
+    await fetchCadastros();
+  } catch (err) {
+    setStatus(statusCadastro, 'Erro: ' + err.message, 'erro');
+  } finally {
+    btnCadastro.disabled = false;
+  }
+};
+
+// --- Init ---
+(async function init() {
+  setStatus(statusPonto, 'Carregando modelos...', 'info');
+  await loadModels();
+  await Promise.all([startCamera(videoPonto), startCamera(videoCadastro)]);
+  await fetchCadastros();
+  setStatus(statusPonto, 'Pronto. Aponte o rosto e clique em Reconhecer.', 'info');
+})();
+</script>
+</body>
+</html>
