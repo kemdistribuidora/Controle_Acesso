@@ -46,6 +46,7 @@ function doPost(e) {
 function cadastrar_(nome, descriptor) {
   const sheet = getSheet_(CADASTROS_SHEET);
   sheet.appendRow([nome, JSON.stringify(descriptor)]);
+  SpreadsheetApp.flush();
   return jsonOut_({ ok: true });
 }
 
@@ -62,6 +63,7 @@ function registrar_(nome) {
   const tipo = proximoTipo_(ultimoTipo);
   const agora = new Date();
   sheet.appendRow([nome, agora, tipo]);
+  SpreadsheetApp.flush();
   return jsonOut_({ ok: true, tipo: tipo, dataHora: agora.toISOString() });
 }
 
