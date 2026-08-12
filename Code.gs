@@ -19,8 +19,9 @@ function doGet(e) {
   const sheet = getSheet_(CADASTROS_SHEET);
   const data = sheet.getDataRange().getValues();
   const cadastros = [];
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0]) {
+  const inicio = (data[0] && data[0][0] === 'Nome') ? 1 : 0;
+  for (let i = inicio; i < data.length; i++) {
+    if (data[i][0] && data[i][1]) {
       cadastros.push({ nome: data[i][0], descriptor: JSON.parse(data[i][1]) });
     }
   }
