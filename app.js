@@ -1,8 +1,8 @@
 // Logica da aplicacao. Funcoes puras no topo (testaveis), wiring de DOM no fim.
 
 const MODEL_URL = './models';
-const DETECTOR_INPUT_SIZE = 224;
-const MATCH_THRESHOLD = 0.55;
+const DETECTOR_INPUT_SIZE = 320;
+const MATCH_THRESHOLD = 0.6;
 
 // --- Funcoes puras (testadas em test/app.test.js) ---
 
