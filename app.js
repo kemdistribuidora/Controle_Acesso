@@ -121,7 +121,7 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
       btnPonto.disabled = true;
       setStatus(statusPonto, 'Analisando rosto...', 'info');
       try {
-        const descriptor = await detectDescriptor(videoPonto);
+        const [descriptor] = await Promise.all([detectDescriptor(videoPonto), fetchCadastros()]);
         const avaliacao = avaliarReconhecimento(descriptor, faceMatcher);
         if (!avaliacao.ok) {
           setStatus(statusPonto, avaliacao.mensagem, 'erro');
