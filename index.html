@@ -2,228 +2,164 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0d1117">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Controle de Acesso - Câmara Fria</title>
 <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
 <script src="config.js"></script>
 <style>
-  * { box-sizing: border-box; }
+  :root {
+    --bg: #0d1117;
+    --card: #161b22;
+    --border: #30363d;
+    --text: #e6edf3;
+    --text-dim: #8b949e;
+    --accent: #2ea043;
+    --accent-text: #05230d;
+    --danger: #f85149;
+    --danger-bg: #2d1214;
+    --ok-bg: #12261a;
+    --info-bg: #16202b;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
   body {
-    font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
     max-width: 480px;
     margin: 0 auto;
-    padding: 16px;
-    background: #111;
-    color: #eee;
+    padding: env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 16px);
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
   }
-  h1 { font-size: 20px; text-align: center; }
-  .tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+
+  header { padding: 20px 4px 16px; text-align: center; }
+  header h1 {
+    font-size: 19px; margin: 0; font-weight: 600; letter-spacing: -0.2px;
+  }
+  header p { margin: 4px 0 0; font-size: 13px; color: var(--text-dim); }
+
+  .tabs {
+    display: flex; gap: 4px; margin-bottom: 16px;
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 4px;
+  }
   .tabs button {
-    flex: 1; padding: 12px; border: none; border-radius: 8px;
-    background: #333; color: #eee; font-size: 15px;
+    flex: 1; padding: 11px 8px; border: none; border-radius: 10px;
+    background: transparent; color: var(--text-dim); font-size: 14px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    transition: background .15s ease, color .15s ease;
   }
-  .tabs button.active { background: #2a7; color: #000; font-weight: bold; }
-  video, canvas { width: 100%; border-radius: 8px; background: #000; transform: scaleX(-1); }
-  #overlay { position: absolute; top: 0; left: 0; }
-  .video-wrap { position: relative; }
-  input[type=text] {
-    width: 100%; padding: 12px; font-size: 16px; margin: 8px 0;
-    border-radius: 8px; border: 1px solid #444; background: #222; color: #eee;
+  .tabs button.active { background: var(--accent); color: var(--accent-text); }
+
+  .card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 14px; margin-bottom: 12px;
   }
-  button.action {
-    width: 100%; padding: 14px; font-size: 16px; margin-top: 8px;
-    border: none; border-radius: 8px; background: #2a7; color: #000; font-weight: bold;
-  }
-  button.action:disabled { background: #555; color: #999; }
-  #status { margin-top: 12px; padding: 12px; border-radius: 8px; text-align: center; font-size: 15px; min-height: 20px; }
-  .ok { background: #163; }
-  .erro { background: #611; }
-  .info { background: #225; }
+
   section { display: none; }
   section.active { display: block; }
+
+  .video-wrap {
+    position: relative; border-radius: 12px; overflow: hidden;
+    background: #000; margin-bottom: 12px; aspect-ratio: 4 / 3;
+  }
+  video { width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); display: block; }
+  .face-guide {
+    position: absolute; inset: 0; pointer-events: none;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .face-guide::before {
+    content: ''; width: 58%; height: 78%;
+    border: 2px dashed rgba(255,255,255,0.35);
+    border-radius: 50% / 42%;
+  }
+
+  input[type=text] {
+    width: 100%; padding: 13px 14px; font-size: 16px; margin-bottom: 12px;
+    border-radius: 10px; border: 1px solid var(--border); background: #0d1117; color: var(--text);
+  }
+  input[type=text]:focus { outline: none; border-color: var(--accent); }
+  input[type=text]::placeholder { color: var(--text-dim); }
+
+  button.action {
+    width: 100%; padding: 15px; font-size: 15px; font-weight: 700;
+    border: none; border-radius: 10px; background: var(--accent); color: var(--accent-text);
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    transition: transform .1s ease, opacity .15s ease;
+  }
+  button.action:active { transform: scale(0.98); }
+  button.action:disabled { background: #21262d; color: var(--text-dim); }
+
+  .status {
+    margin-top: 12px; padding: 12px 14px; border-radius: 10px;
+    text-align: center; font-size: 14px; min-height: 20px; display: none;
+    animation: fadein .2s ease;
+  }
+  .status:not(:empty) { display: block; }
+  .status.ok { background: var(--ok-bg); color: #7ee2a8; }
+  .status.erro { background: var(--danger-bg); color: #ff9b96; }
+  .status.info { background: var(--info-bg); color: #9dc3e6; }
+  @keyframes fadein { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+
+  #loadingOverlay {
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 16px; z-index: 100; transition: opacity .25s ease;
+  }
+  #loadingOverlay.hidden { opacity: 0; pointer-events: none; }
+  .spinner {
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 3px solid var(--border); border-top-color: var(--accent);
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  #loadingText { font-size: 13px; color: var(--text-dim); text-align: center; padding: 0 24px; }
 </style>
 </head>
 <body>
 
-<h1>Controle de Acesso - Câmara Fria</h1>
+<div id="loadingOverlay">
+  <div class="spinner"></div>
+  <div id="loadingText">Iniciando...</div>
+</div>
+
+<header>
+  <h1>🧊 Controle de Acesso</h1>
+  <p>Câmara Fria</p>
+</header>
 
 <div class="tabs">
-  <button id="tabPonto" class="active">Bater Ponto</button>
-  <button id="tabCadastro">Cadastrar</button>
+  <button id="tabPonto" class="active">⏱ Bater Ponto</button>
+  <button id="tabCadastro">👤 Cadastrar</button>
 </div>
 
 <section id="secPonto" class="active">
-  <div class="video-wrap">
-    <video id="videoPonto" autoplay muted playsinline></video>
+  <div class="card">
+    <div class="video-wrap">
+      <video id="videoPonto" autoplay muted playsinline></video>
+      <div class="face-guide"></div>
+    </div>
+    <button class="action" id="btnPonto">Reconhecer e Registrar</button>
+    <div id="statusPonto" class="status"></div>
   </div>
-  <button class="action" id="btnPonto">Reconhecer e Registrar</button>
-  <div id="statusPonto"></div>
 </section>
 
 <section id="secCadastro">
-  <input type="text" id="inputNome" placeholder="Nome completo">
-  <div class="video-wrap">
-    <video id="videoCadastro" autoplay muted playsinline></video>
+  <div class="card">
+    <input type="text" id="inputNome" placeholder="Nome completo" autocomplete="off">
+    <div class="video-wrap">
+      <video id="videoCadastro" autoplay muted playsinline></video>
+      <div class="face-guide"></div>
+    </div>
+    <button class="action" id="btnCadastro">Capturar Rosto e Cadastrar</button>
+    <div id="statusCadastro" class="status"></div>
   </div>
-  <button class="action" id="btnCadastro">Capturar Rosto e Cadastrar</button>
-  <div id="statusCadastro"></div>
 </section>
 
-<script>
-const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
-const MATCH_THRESHOLD = 0.55;
-
-let cadastros = [];
-let faceMatcher = null;
-
-function setStatus(el, msg, tipo) {
-  el.textContent = msg;
-  el.className = tipo || '';
-}
-
-async function startCamera(videoEl, stream) {
-  videoEl.srcObject = stream;
-  return new Promise(resolve => videoEl.onloadedmetadata = () => resolve());
-}
-
-async function getSharedStream() {
-  return navigator.mediaDevices.getUserMedia({
-    video: { facingMode: 'user', width: { ideal: 480 } },
-    audio: false
-  });
-}
-
-async function loadModels() {
-  await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
-  await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
-  await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
-}
-
-async function detectDescriptor(videoEl) {
-  const result = await faceapi
-    .detectSingleFace(videoEl, new faceapi.TinyFaceDetectorOptions())
-    .withFaceLandmarks()
-    .withFaceDescriptor();
-  return result ? result.descriptor : null;
-}
-
-async function fetchCadastros() {
-  const res = await fetch(APPS_SCRIPT_URL + '?t=' + Date.now(), { cache: 'no-store' });
-  const data = await res.json();
-  cadastros = data.cadastros || [];
-  if (cadastros.length > 0) {
-    const labeled = cadastros.map(c => new faceapi.LabeledFaceDescriptors(
-      c.nome, [new Float32Array(c.descriptor)]
-    ));
-    faceMatcher = new faceapi.FaceMatcher(labeled, MATCH_THRESHOLD);
-  } else {
-    faceMatcher = null;
-  }
-}
-
-async function postAppsScript(body) {
-  const res = await fetch(APPS_SCRIPT_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify(body)
-  });
-  return res.json();
-}
-
-// --- Tabs ---
-const tabPonto = document.getElementById('tabPonto');
-const tabCadastro = document.getElementById('tabCadastro');
-const secPonto = document.getElementById('secPonto');
-const secCadastro = document.getElementById('secCadastro');
-
-tabPonto.onclick = () => {
-  tabPonto.classList.add('active');
-  tabCadastro.classList.remove('active');
-  secPonto.classList.add('active');
-  secCadastro.classList.remove('active');
-  fetchCadastros();
-};
-tabCadastro.onclick = () => {
-  tabCadastro.classList.add('active');
-  tabPonto.classList.remove('active');
-  secCadastro.classList.add('active');
-  secPonto.classList.remove('active');
-};
-
-// --- Ponto ---
-const videoPonto = document.getElementById('videoPonto');
-const btnPonto = document.getElementById('btnPonto');
-const statusPonto = document.getElementById('statusPonto');
-
-btnPonto.onclick = async () => {
-  btnPonto.disabled = true;
-  setStatus(statusPonto, 'Analisando rosto...', 'info');
-  try {
-    const descriptor = await detectDescriptor(videoPonto);
-    if (!descriptor) {
-      setStatus(statusPonto, 'Rosto não encontrado. Aproxime o celular.', 'erro');
-      return;
-    }
-    if (!faceMatcher) {
-      setStatus(statusPonto, 'Nenhum rosto cadastrado ainda.', 'erro');
-      return;
-    }
-    const match = faceMatcher.findBestMatch(descriptor);
-    if (match.label === 'unknown') {
-      setStatus(statusPonto, 'Rosto não reconhecido. Cadastre-se primeiro.', 'erro');
-      return;
-    }
-    setStatus(statusPonto, 'Registrando ' + match.label + '...', 'info');
-    const resp = await postAppsScript({ action: 'registrar', nome: match.label });
-    const hora = new Date(resp.dataHora).toLocaleTimeString('pt-BR');
-    setStatus(statusPonto, resp.tipo + ' registrada: ' + match.label + ' às ' + hora, 'ok');
-  } catch (err) {
-    setStatus(statusPonto, 'Erro: ' + err.message, 'erro');
-  } finally {
-    btnPonto.disabled = false;
-  }
-};
-
-// --- Cadastro ---
-const videoCadastro = document.getElementById('videoCadastro');
-const btnCadastro = document.getElementById('btnCadastro');
-const statusCadastro = document.getElementById('statusCadastro');
-const inputNome = document.getElementById('inputNome');
-
-btnCadastro.onclick = async () => {
-  const nome = inputNome.value.trim();
-  if (!nome) {
-    setStatus(statusCadastro, 'Digite o nome primeiro.', 'erro');
-    return;
-  }
-  btnCadastro.disabled = true;
-  setStatus(statusCadastro, 'Capturando rosto...', 'info');
-  try {
-    const descriptor = await detectDescriptor(videoCadastro);
-    if (!descriptor) {
-      setStatus(statusCadastro, 'Rosto não encontrado. Aproxime o celular.', 'erro');
-      return;
-    }
-    await postAppsScript({ action: 'cadastrar', nome: nome, descriptor: Array.from(descriptor) });
-    setStatus(statusCadastro, 'Cadastrado: ' + nome, 'ok');
-    inputNome.value = '';
-    await fetchCadastros();
-  } catch (err) {
-    setStatus(statusCadastro, 'Erro: ' + err.message, 'erro');
-  } finally {
-    btnCadastro.disabled = false;
-  }
-};
-
-// --- Init ---
-(async function init() {
-  setStatus(statusPonto, 'Carregando modelos...', 'info');
-  await loadModels();
-  const stream = await getSharedStream();
-  await Promise.all([startCamera(videoPonto, stream), startCamera(videoCadastro, stream)]);
-  await fetchCadastros();
-  setStatus(statusPonto, 'Pronto. Aponte o rosto e clique em Reconhecer.', 'info');
-})();
-</script>
+<script src="app.js"></script>
 </body>
 </html>

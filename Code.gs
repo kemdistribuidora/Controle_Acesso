@@ -59,13 +59,21 @@ function registrar_(nome) {
       break;
     }
   }
-  const tipo = (ultimoTipo === 'Entrada') ? 'Saida' : 'Entrada';
+  const tipo = proximoTipo_(ultimoTipo);
   const agora = new Date();
   sheet.appendRow([nome, agora, tipo]);
   return jsonOut_({ ok: true, tipo: tipo, dataHora: agora.toISOString() });
 }
 
+function proximoTipo_(ultimoTipo) {
+  return (ultimoTipo === 'Entrada') ? 'Saida' : 'Entrada';
+}
+
 function jsonOut_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj))
     .setMimeType(ContentService.MimeType.JSON);
+}
+
+if (typeof module !== 'undefined' && module.exports) {
+  module.exports = { proximoTipo_ };
 }
