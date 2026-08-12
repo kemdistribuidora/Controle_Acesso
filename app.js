@@ -1,6 +1,7 @@
 // Logica da aplicacao. Funcoes puras no topo (testaveis), wiring de DOM no fim.
 
-const MODEL_URL = 'https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@master/weights';
+const MODEL_URL = './models';
+const DETECTOR_INPUT_SIZE = 224;
 const MATCH_THRESHOLD = 0.55;
 
 // --- Funcoes puras (testadas em test/app.test.js) ---
@@ -69,7 +70,7 @@ if (typeof window !== 'undefined' && typeof document !== 'undefined') {
 
     async function detectDescriptor(videoEl) {
       const result = await faceapi
-        .detectSingleFace(videoEl, new faceapi.TinyFaceDetectorOptions())
+        .detectSingleFace(videoEl, new faceapi.TinyFaceDetectorOptions({ inputSize: DETECTOR_INPUT_SIZE }))
         .withFaceLandmarks()
         .withFaceDescriptor();
       return result ? result.descriptor : null;
