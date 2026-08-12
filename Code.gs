@@ -38,6 +38,8 @@ function doPost(e) {
       return registrar_(body.nome);
     }
     return jsonOut_({ erro: 'acao invalida' });
+  } catch (err) {
+    return jsonOut_({ erro: err.message });
   } finally {
     lock.releaseLock();
   }
