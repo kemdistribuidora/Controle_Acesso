@@ -16,16 +16,24 @@ function getSheet_(nome) {
 }
 
 function doGet(e) {
-  const sheet = getSheet_(CADASTROS_SHEET);
-  const data = sheet.getDataRange().getValues();
-  const cadastros = [];
-  const inicio = (data[0] && data[0][0] === 'Nome') ? 1 : 0;
-  for (let i = inicio; i < data.length; i++) {
-    if (data[i][0] && data[i][1]) {
-      cadastros.push({ nome: data[i][0], descriptor: JSON.parse(data[i][1]) });
+  try {
+    const sheet = getSheet_(CADASTROS_SHEET);
+    const data = sheet.getDataRange().getValues();
+    const cadastros = [];
+    const inicio = (data[0] && data[0][0] === 'Nome') ? 1 : 0;
+    for (let i = inicio; i < data.length; i++) {
+      if (data[i][0] && data[i][1]) {
+        try {
+          cadastros.push({ nome: data[i][0], descriptor: JSON.parse(data[i][1]) });
+        } catch (parseErr) {
+          // linha com Descriptor corrompido, pula sem derrubar a request inteira
+        }
+      }
     }
+    return jsonOut_({ cadastros: cadastros });
+  } catch (err) {
+    return jsonOut_({ erro: err.message, cadastros: [] });
   }
-  return jsonOut_({ cadastros: cadastros });
 }
 
 function doPost(e) {
