@@ -64,8 +64,9 @@ function cadastrar_(nome, descriptor) {
 function registrar_(nome) {
   const sheet = getSheet_(REGISTROS_SHEET);
   const data = sheet.getDataRange().getValues();
+  const inicio = (data[0] && data[0][0] === 'Nome') ? 1 : 0;
   let ultimoTipo = null;
-  for (let i = data.length - 1; i >= 1; i--) {
+  for (let i = data.length - 1; i >= inicio; i--) {
     if (data[i][0] === nome) {
       ultimoTipo = data[i][2];
       break;
