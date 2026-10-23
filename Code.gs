@@ -1,17 +1,20 @@
 // Google Apps Script - colar no Extensões > Apps Script da planilha
 // Depois: Implantar > Nova implantação > Web App > acesso "Qualquer pessoa"
 
+const SPREADSHEET_ID = '12YepnQuYfgKxaOgmPQSLx8qV6nCFRhsKyvtCts9VJiM';
 const CADASTROS_SHEET = 'Cadastros';
-const REGISTROS_SHEET = 'Registros';
+const REGISTROS_SHEET = 'Camara Fria';
 
 function getSheet_(nome) {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   let sheet = ss.getSheetByName(nome);
-  if (!sheet) {
-    sheet = ss.insertSheet(nome);
+  if (!sheet) sheet = ss.insertSheet(nome);
+  if (sheet.getLastRow() === 0) {
     if (nome === CADASTROS_SHEET) sheet.appendRow(['Nome', 'Descriptor']);
     if (nome === REGISTROS_SHEET) sheet.appendRow(['Nome', 'DataHora', 'Tipo']);
   }
+  // aba de cadastros (dados faciais) fica oculta, nao e aba de operacao
+  if (nome === CADASTROS_SHEET && !sheet.isSheetHidden()) sheet.hideSheet();
   return sheet;
 }
 
